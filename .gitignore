@@ -1,0 +1,7 @@
+*.dcu
+*.dproj
+*.dsk
+*.2007
+*.local
+*.identcache
+data/
