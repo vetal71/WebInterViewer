@@ -1,9 +1,9 @@
-unit WebModuleU;
+unit uWebModule;
 
 interface
 
 uses
-{$IFDEF VER=300}
+(*
   System.SysUtils, System.Classes, Web.HTTPApp, Data.DBXJSON, FireDAC.Stan.Intf,
   FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf,
   FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys,
@@ -11,15 +11,15 @@ uses
   FireDAC.Phys.IBBase, FireDAC.Phys.IB, Data.DB, FireDAC.Comp.DataSet,
   FireDAC.Comp.Client, FireDAC.Moni.Base, FireDAC.Moni.FlatFile,
   FireDAC.Moni.Custom, System.JSON;
-{$ELSE}
+*)  
+
   HTTPApp, Classes, uADStanIntf, uADStanOption, uADStanError, uADGUIxIntf,
   uADPhysIntf, uADStanDef, uADStanPool, uADStanAsync, uADPhysManager, DB,
   uADCompClient
-{$ENDIF}
 
 type
   TwmMain = class(TWebModule)
-    Connection: TFDConnection;
+(*    Connection: TFDConnection;
     FDPhysIBDriverLink1: TFDPhysIBDriverLink;
     cmdInsertPerson: TFDCommand;
     qryPeople: TFDQuery;
@@ -38,7 +38,7 @@ type
   private
     procedure PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
   end;
-
+*)
 var
   WebModuleClass: TComponentClass = TwmMain;
 
@@ -46,7 +46,7 @@ implementation
 
 {$R *.dfm}
 
-
+(*
 uses
   ObjectsMappers, {this unit comes from delphimvcframework project}
   System.RegularExpressions,
@@ -55,14 +55,14 @@ uses
 procedure TwmMain.wmMainDefaultHandlerAction(Sender: TObject;
   Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
 begin
-  Response.SendRedirect('/index.html');
+//  Response.SendRedirect('/index.html');
 end;
 
 procedure TwmMain.wmMainwaDeletePersonAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 begin
-  Connection.ExecSQL('DELETE FROM PEOPLE WHERE ID = ?', [Request.ContentFields.Values['id']]);
-  PrepareResponse(nil, Response);
+//  Connection.ExecSQL('DELETE FROM PEOPLE WHERE ID = ?', [Request.ContentFields.Values['id']]);
+//  PrepareResponse(nil, Response);
 end;
 
 procedure TwmMain.wmMainwaGetPeopleAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
@@ -168,5 +168,7 @@ begin
     JObj.Free;
   end;
 end;
+
+*)
 
 end.

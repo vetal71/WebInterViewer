@@ -9,14 +9,15 @@ uses
   Winapi.Windows,
   Web.WebReq,
   Web.WebBroker,
+  WebModuleU in 'WebModuleU.pas', {wmMain: TWebModule}
 {$ELSE}
   SysUtils,
   Windows,
   WebReq,
   WebBroker,
+  uWebModule in 'uWebModule.pas', {wmMain: TWebModule}  
 {$ENDIF}
-  IdHTTPWebBrokerBridge,
-  WebModuleU in 'WebModuleU.pas' {wmMain: TWebModule};
+  IdHTTPWebBrokerBridge;
 
 {$R *.res}
 
