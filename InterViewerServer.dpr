@@ -1,22 +1,12 @@
 program InterViewerServer;
 {$APPTYPE CONSOLE}
 
-
 uses
-
-{$IFDEF VER=300}
   System.SysUtils,
   Winapi.Windows,
   Web.WebReq,
   Web.WebBroker,
   WebModuleU in 'WebModuleU.pas', {wmMain: TWebModule}
-{$ELSE}
-  SysUtils,
-  Windows,
-  WebReq,
-  WebBroker,
-  uWebModule in 'uWebModule.pas', {wmMain: TWebModule}  
-{$ENDIF}
   IdHTTPWebBrokerBridge;
 
 {$R *.res}

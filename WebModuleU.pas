@@ -2,39 +2,32 @@ unit WebModuleU;
 
 interface
 
-uses
-{$IFDEF VER=300}
-  System.SysUtils, System.Classes, Web.HTTPApp, Data.DBXJSON, FireDAC.Stan.Intf,
-  FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf,
-  FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys,
-  FireDAC.Stan.Param, FireDAC.DatS, FireDAC.DApt.Intf, FireDAC.DApt,
-  FireDAC.Phys.IBBase, FireDAC.Phys.IB, Data.DB, FireDAC.Comp.DataSet,
-  FireDAC.Comp.Client, FireDAC.Moni.Base, FireDAC.Moni.FlatFile,
-  FireDAC.Moni.Custom, System.JSON;
-{$ELSE}
-  HTTPApp, Classes, uADStanIntf, uADStanOption, uADStanError, uADGUIxIntf,
-  uADPhysIntf, uADStanDef, uADStanPool, uADStanAsync, uADPhysManager, DB,
-  uADCompClient
-{$ENDIF}
+uses System.SysUtils, System.Classes, Web.HTTPApp,
+Data.DBXJSON, FireDAC.Stan.Intf, FireDAC.Stan.Option,
+  FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def,
+  FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Stan.Param,
+  FireDAC.DatS, FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Phys.IBBase,
+  FireDAC.Phys.IB, Data.DB, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
+  FireDAC.Moni.Base, FireDAC.Moni.FlatFile, FireDAC.Moni.Custom, System.JSON,
+  FireDAC.Phys.IBDef, FireDAC.VCLUI.Wait, FireDAC.Phys.FB, FireDAC.Phys.FBDef;
 
 type
   TwmMain = class(TWebModule)
-    Connection: TFDConnection;
-    FDPhysIBDriverLink1: TFDPhysIBDriverLink;
-    cmdInsertPerson: TFDCommand;
-    qryPeople: TFDQuery;
-    cmdUpdatePerson: TFDCommand;
+    dbConnection: TFDConnection;
+    cmdInsertContact: TFDCommand;
+    qryContacts: TFDQuery;
+    cmdUpdateContact: TFDCommand;
     WebFileDispatcher1: TWebFileDispatcher;
-    ADConnection1: TADConnection;
+    FDPhysFBDriverLink1: TFDPhysFBDriverLink;
     procedure wmMainDefaultHandlerAction(Sender: TObject;
       Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
-    procedure wmMainwaGetPeopleAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+    procedure wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
       var Handled: Boolean);
-    procedure wmMainwaDeletePersonAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+    procedure wmMainwaDeleteContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
       var Handled: Boolean);
-    procedure wmMainwaSavePersonAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+    procedure wmMainwaSaveContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
       var Handled: Boolean);
-    procedure ConnectionBeforeConnect(Sender: TObject);
+    procedure dbConnectionBeforeConnect(Sender: TObject);
   private
     procedure PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
   end;
@@ -58,43 +51,43 @@ begin
   Response.SendRedirect('/index.html');
 end;
 
-procedure TwmMain.wmMainwaDeletePersonAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+procedure TwmMain.wmMainwaDeleteContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 begin
-  Connection.ExecSQL('DELETE FROM PEOPLE WHERE ID = ?', [Request.ContentFields.Values['id']]);
+  dbConnection.ExecSQL('DELETE FROM CONTACTS WHERE CODE = ?', [Request.ContentFields.Values['code']]);
   PrepareResponse(nil, Response);
 end;
 
-procedure TwmMain.wmMainwaGetPeopleAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+procedure TwmMain.wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 var
-  JPeople: TJSONArray;
+  JContacts: TJSONArray;
   SQL: string;
   OrderBy: string;
 begin
-  SQL := 'SELECT * FROM PEOPLE ';
-  OrderBy := Request.QueryFields.Values['jtSorting'].Trim.ToUpper;
+  SQL := 'SELECT FIRST 20 FIO, SEX, HOMEPHONE, CELURARPHONE, EMAIL FROM CONTACTS ';
+  OrderBy := Request.QueryFields.Values['jtSorting'];
   if OrderBy.IsEmpty then
-    SQL := SQL + 'ORDER BY FIRST_NAME ASC'
+    SQL := SQL + 'ORDER BY FIO ASC'
   else
   begin
-    if TRegEx.IsMatch(OrderBy, '^[A-Z,_]+[ ]+(ASC|DESC)$') then
-      SQL := SQL + 'ORDER BY ' + OrderBy
+    if TRegEx.IsMatch(OrderBy, '^[A-Z,_]+[ ]+(ASC|DESC)$', [roIgnoreCase]) then
+      SQL := SQL + 'ORDER BY ' + OrderBy.ToUpper
     else
       raise Exception.Create('Invalid order clause syntax');
   end;
 
   // execute query and prepare response
-  qryPeople.Open(SQL);
+  qryContacts.Open(SQL);
   try
-    JPeople := qryPeople.AsJSONArray;
+    JContacts := qryContacts.AsJSONArray;
   finally
-    qryPeople.Close;
+    qryContacts.Close;
   end;
-  PrepareResponse(JPeople, Response);
+  PrepareResponse(JContacts, Response);
 end;
 
-procedure TwmMain.wmMainwaSavePersonAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+procedure TwmMain.wmMainwaSaveContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 var
   InsertMode: Boolean;
@@ -120,31 +113,34 @@ begin
   InsertMode := HTTPFields.IndexOfName('id') = -1;
   if InsertMode then
   begin
-    MapStringsToParams(HTTPFields, cmdInsertPerson.Params);
-    cmdInsertPerson.Execute();
-    LastID := Connection.GetLastAutoGenValue('GEN_PEOPLE_ID');
+    MapStringsToParams(HTTPFields, cmdInsertContact.Params);
+    cmdInsertContact.Execute();
+    LastID := dbConnection.GetLastAutoGenValue('GEN_CONTACTS_ID');
   end
   else
   begin
-    MapStringsToParams(HTTPFields, cmdUpdatePerson.Params);
-    cmdUpdatePerson.Execute();
-    LastID := HTTPFields.Values['id'].ToInteger;
+    MapStringsToParams(HTTPFields, cmdUpdateContact.Params);
+    cmdUpdateContact.Execute();
+    LastID := StrToIntDef(HTTPFields.Values['code'], 0);
   end;
 
   // execute query and prepare response
-  qryPeople.Open('SELECT * FROM PEOPLE WHERE ID = ?', [LastID]);
+  qryContacts.Open('SELECT * FROM CONTACTS WHERE CODE = ?', [LastID]);
   try
-    PrepareResponse(qryPeople.AsJSONObject, Response);
+    PrepareResponse(qryContacts.AsJSONObject, Response);
+    //qryContacts.AsJSONArrayString;
   finally
-    qryPeople.Close;
+    qryContacts.Close;
   end;
 end;
 
-procedure TwmMain.ConnectionBeforeConnect(Sender: TObject);
+procedure TwmMain.dbConnectionBeforeConnect(Sender: TObject);
 begin
-  Connection.Params.Values['Database'] :=
+  dbConnection.Params.Values['Database'] :=
     TPath.GetDirectoryName(WebApplicationFileName) +
-    '\..\..\..\DATA\SAMPLES.IB';
+    '\DATA\IVIEWER_UTF.FDB';
+  dbConnection.Params.Values['CharacterSet'] :=
+    'UTF8';
 end;
 
 procedure TwmMain.PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
@@ -163,7 +159,7 @@ begin
     end;
     AWebResponse.Content := JObj.ToString;
     AWebResponse.StatusCode := 200;
-    AWebResponse.ContentType := 'application/json';
+    AWebResponse.ContentType := 'application/json; charset=utf-8';
   finally
     JObj.Free;
   end;
