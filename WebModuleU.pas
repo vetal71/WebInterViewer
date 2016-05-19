@@ -153,7 +153,10 @@ begin
     if Assigned(AJSONValue) then
     begin
       if AJSONValue is TJSONArray then
-        JObj.AddPair('Records', AJSONValue)
+      begin
+        JObj.AddPair('Records', AJSONValue);
+        JObj.AddPair('TotalRecordCount', IntToStr((AJSONValue as TJSONArray).Count));
+      end
       else
         JObj.AddPair('Record', AJSONValue)
     end;
