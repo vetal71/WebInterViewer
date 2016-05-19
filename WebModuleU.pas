@@ -30,6 +30,7 @@ type
     procedure dbConnectionBeforeConnect(Sender: TObject);
   private
     procedure PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
+    function GetRecordCount: Integer;
   end;
 
 var
@@ -60,12 +61,16 @@ end;
 
 procedure TwmMain.wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
+const
+  cSQLText = 'SELECT FIRST %s SKIP %s FIO, SEX, HOMEPHONE, CELURARPHONE, EMAIL FROM CONTACTS ';
 var
   JContacts: TJSONArray;
   SQL: string;
-  OrderBy: string;
+  OrderBy, StartIndex, PageSize: string;
 begin
-  SQL := 'SELECT FIRST 20 FIO, SEX, HOMEPHONE, CELURARPHONE, EMAIL FROM CONTACTS ';
+  StartIndex := Request.QueryFields.Values['jtStartIndex'];
+  PageSize   := Request.QueryFields.Values['jtPageSize'];
+  SQL := Format(cSQLText, [ PageSize, StartIndex ]);
   OrderBy := Request.QueryFields.Values['jtSorting'];
   if OrderBy.IsEmpty then
     SQL := SQL + 'ORDER BY FIO ASC'
@@ -143,6 +148,11 @@ begin
     'UTF8';
 end;
 
+function TwmMain.GetRecordCount: Integer;
+begin
+  Result := dbConnection.ExecSQLScalar('SELECT COUNT(*) FROM CONTACTS');
+end;
+
 procedure TwmMain.PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
 var
   JObj: TJSONObject;
@@ -155,7 +165,7 @@ begin
       if AJSONValue is TJSONArray then
       begin
         JObj.AddPair('Records', AJSONValue);
-        JObj.AddPair('TotalRecordCount', IntToStr((AJSONValue as TJSONArray).Count));
+        JObj.AddPair('TotalRecordCount', IntToStr(GetRecordCount));
       end
       else
         JObj.AddPair('Record', AJSONValue)
