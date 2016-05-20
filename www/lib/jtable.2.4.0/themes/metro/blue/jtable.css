@@ -55,7 +55,7 @@ div.jtable-main-container {
 }
 div.jtable-main-container div.jtable-title {
   position: relative;
-  text-align: left;
+  text-align: center;
 }
 div.jtable-main-container div.jtable-title .jtable-close-button {
   right: 0px;

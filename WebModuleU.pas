@@ -62,7 +62,31 @@ end;
 procedure TwmMain.wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 const
-  cSQLText = 'SELECT FIRST %s SKIP %s FIO, SEX, HOMEPHONE, CELURARPHONE, EMAIL FROM CONTACTS ';
+  cSQLText = 'SELECT FIRST %s SKIP %s '#13#10 +
+             '             CODE,'#13#10 +
+             '             FIO, '#13#10 +
+             '             SEX, '#13#10 +
+             '             CURRENTNOTES, '#13#10 +
+             '             REGION, '#13#10 +
+             '             CITY, '#13#10 +
+             '             BIRTHDATE, '#13#10 +
+             '             CELURARPHONE, '#13#10 +
+             '             HOMEPHONE, '#13#10 +
+             '             EMAIL, '#13#10 +
+             '             OTHERTYPELINKS, '#13#10 +
+             '             ADDRESS, '#13#10 +
+             '             PASSPORT, '#13#10 +
+             '             SPECIALIZATION, '#13#10 +
+             '             TRANSFERTYPE, '#13#10 +
+             '             NUMBERCARD, '#13#10 +
+             '             MEMBERPROJECTS, '#13#10 +
+             '             DATELAST, '#13#10 +
+             '             COUNTANKETA, '#13#10 +
+             '             PERCENTGOOD, '#13#10 +
+             '             PERCENTBAD, '#13#10 +
+             '             GENERALCHARACTERISTIC, '#13#10 +
+             '             ISSUPERVIZER '#13#10 +
+             '      FROM CONTACTS';
 var
   JContacts: TJSONArray;
   SQL: string;
