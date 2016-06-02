@@ -6,3 +6,6 @@ __history/
 *.local
 *.identcache
 *.~dsk
+*.cbk
+*.stat
+__recovery/
