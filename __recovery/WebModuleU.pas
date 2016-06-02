@@ -98,20 +98,22 @@ const
 var
   JContacts: TJSONArray;
   SQL: string;
-  OrderBy, StartIndex, PageSize: string;
+  OrderBy, SortAs, StartIndex, PageSize: string;
 begin
-  StartIndex := Request.QueryFields.Values['jtStartIndex'];
-  PageSize   := Request.QueryFields.Values['jtPageSize'];
+  StartIndex := Request.QueryFields.Values['page'];
+  PageSize   := Request.QueryFields.Values['rows'];
   SQL := Format(cSQLText, [ PageSize, StartIndex ]);
-  OrderBy := Request.QueryFields.Values['jtSorting'];
+  OrderBy := Request.QueryFields.Values['sidx'];
+  SortAs  := Request.QueryFields.Values['sord'];
   if OrderBy.IsEmpty then
     SQL := SQL + 'ORDER BY FIO ASC'
   else
   begin
-    if TRegEx.IsMatch(OrderBy, '^[A-Z,_]+[ ]+(ASC|DESC)$', [roIgnoreCase]) then
-      SQL := SQL + 'ORDER BY ' + OrderBy.ToUpper
-    else
-      raise Exception.Create('Invalid order clause syntax');
+//    if TRegEx.IsMatch(OrderBy, '^[A-Z,_]+[ ]+(ASC|DESC)$', [roIgnoreCase]) then
+
+    SQL := SQL + 'ORDER BY ' + Format('%s %s', [OrderBy.ToUpper, SortAs.ToUpper]);
+//    else
+//      raise Exception.Create('Invalid order clause syntax');
   end;
 
   // execute query and prepare response
