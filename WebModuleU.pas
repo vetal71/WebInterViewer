@@ -29,7 +29,8 @@ type
       var Handled: Boolean);
     procedure dbConnectionBeforeConnect(Sender: TObject);
   private
-    procedure PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
+    procedure PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse;
+      ARequest: TWebRequest);
     function GetRecordCount: Integer;
   end;
 
@@ -56,45 +57,45 @@ procedure TwmMain.wmMainwaDeleteContactAction(Sender: TObject; Request: TWebRequ
   var Handled: Boolean);
 begin
   dbConnection.ExecSQL('DELETE FROM CONTACTS WHERE CODE = ?', [Request.ContentFields.Values['code']]);
-  PrepareResponse(nil, Response);
+  PrepareResponse(nil, Response, Request);
 end;
 
 procedure TwmMain.wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 const
-//  cSQLText = 'SELECT FIRST %s SKIP %s '#13#10 +
-//             '             CODE,'#13#10 +
-//             '             FIO, '#13#10 +
-//             '             SEX, '#13#10 +
-//             '             CURRENTNOTES, '#13#10 +
-//             '             REGION, '#13#10 +
-//             '             CITY, '#13#10 +
-//             '             BIRTHDATE, '#13#10 +
-//             '             CELURARPHONE, '#13#10 +
-//             '             HOMEPHONE, '#13#10 +
-//             '             EMAIL, '#13#10 +
-//             '             OTHERTYPELINKS, '#13#10 +
-//             '             ADDRESS, '#13#10 +
-//             '             PASSPORT, '#13#10 +
-//             '             SPECIALIZATION, '#13#10 +
-//             '             TRANSFERTYPE, '#13#10 +
-//             '             NUMBERCARD, '#13#10 +
-//             '             MEMBERPROJECTS, '#13#10 +
-//             '             DATELAST, '#13#10 +
-//             '             COUNTANKETA, '#13#10 +
-//             '             PERCENTGOOD, '#13#10 +
-//             '             PERCENTBAD, '#13#10 +
-//             '             GENERALCHARACTERISTIC, '#13#10 +
-//             '             ISSUPERVIZER '#13#10 +
-//             '      FROM CONTACTS';
-  cSQLText = 'SELECT FIRST 10 '#13#10 +
+  cSQLText = 'SELECT FIRST %s SKIP %s '#13#10 +
              '             CODE,'#13#10 +
              '             FIO, '#13#10 +
              '             SEX, '#13#10 +
+             '             CURRENTNOTES, '#13#10 +
+             '             REGION, '#13#10 +
+             '             CITY, '#13#10 +
+             '             BIRTHDATE, '#13#10 +
              '             CELURARPHONE, '#13#10 +
              '             HOMEPHONE, '#13#10 +
-             '             EMAIL '#13#10 +
+             '             EMAIL, '#13#10 +
+             '             OTHERTYPELINKS, '#13#10 +
+             '             ADDRESS, '#13#10 +
+             '             PASSPORT, '#13#10 +
+             '             SPECIALIZATION, '#13#10 +
+             '             TRANSFERTYPE, '#13#10 +
+             '             NUMBERCARD, '#13#10 +
+             '             MEMBERPROJECTS, '#13#10 +
+             '             DATELAST, '#13#10 +
+             '             COUNTANKETA, '#13#10 +
+             '             PERCENTGOOD, '#13#10 +
+             '             PERCENTBAD, '#13#10 +
+             '             GENERALCHARACTERISTIC, '#13#10 +
+             '             ISSUPERVIZER '#13#10 +
              '      FROM CONTACTS ';
+//  cSQLText = 'SELECT '#13#10 +
+//             '             CODE,'#13#10 +
+//             '             FIO, '#13#10 +
+//             '             SEX, '#13#10 +
+//             '             CELURARPHONE, '#13#10 +
+//             '             HOMEPHONE, '#13#10 +
+//             '             EMAIL '#13#10 +
+//             '      FROM CONTACTS ';
 var
   JContacts: TJSONArray;
   SQL: string;
@@ -123,7 +124,7 @@ begin
   finally
     qryContacts.Close;
   end;
-  PrepareResponse(JContacts, Response);
+  PrepareResponse(JContacts, Response, Request);
 end;
 
 procedure TwmMain.wmMainwaSaveContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
@@ -166,7 +167,7 @@ begin
   // execute query and prepare response
   qryContacts.Open('SELECT * FROM CONTACTS WHERE CODE = ?', [LastID]);
   try
-    PrepareResponse(qryContacts.AsJSONObject, Response);
+    PrepareResponse(qryContacts.AsJSONObject, Response, Request);
     //qryContacts.AsJSONArrayString;
   finally
     qryContacts.Close;
@@ -187,22 +188,29 @@ begin
   Result := dbConnection.ExecSQLScalar('SELECT COUNT(*) FROM CONTACTS');
 end;
 
-procedure TwmMain.PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse);
+procedure TwmMain.PrepareResponse(AJSONValue: TJSONValue; AWebResponse: TWebResponse;
+  ARequest: TWebRequest);
 var
   JObj: TJSONObject;
+  TotalPages, TotalRecords, Records: Integer;
 begin
   JObj := TJSONObject.Create;
   try
-    JObj.AddPair('Result', 'OK');
+    Records := StrToIntDef(ARequest.QueryFields.Values['rows'], 0);
+    TotalRecords := GetRecordCount;
+    TotalPages := Trunc(TotalRecords / Records);
     if Assigned(AJSONValue) then
     begin
       if AJSONValue is TJSONArray then
       begin
-        JObj.AddPair('records', AJSONValue);
-        JObj.AddPair('TotalRecordCount', IntToStr(GetRecordCount));
+
+        JObj.AddPair('page', ARequest.QueryFields.Values['page']);          // текущая страница
+        JObj.AddPair('total', IntToStr(TotalPages));                       // всего страниц
+        JObj.AddPair('records', IntToStr(TotalRecords));                   // всего  записей
+        JObj.AddPair('rows', AJSONValue);
       end
       else
-        JObj.AddPair('Record', AJSONValue)
+        JObj.AddPair('rows', AJSONValue)
     end;
     AWebResponse.Content := JObj.ToString;
     AWebResponse.StatusCode := 200;
