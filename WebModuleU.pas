@@ -63,7 +63,7 @@ end;
 procedure TwmMain.wmMainwaGetContactAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
   var Handled: Boolean);
 const
-  cSQLText = 'SELECT FIRST %s SKIP %s '#13#10 +
+  cSQLText = 'SELECT FIRST %d SKIP %d '#13#10 +
              '             CODE,'#13#10 +
              '             FIO, '#13#10 +
              '             SEX, '#13#10 +
@@ -100,10 +100,15 @@ var
   JContacts: TJSONArray;
   SQL: string;
   OrderBy, SortAs, StartIndex, PageSize: string;
+  First, Skip: Integer;
 begin
-  StartIndex := Request.QueryFields.Values['page'];
   PageSize   := Request.QueryFields.Values['rows'];
-  SQL := Format(cSQLText, [ PageSize, StartIndex ]);
+  StartIndex := Request.QueryFields.Values['page'];
+
+  First := StrToIntDef( PageSize, 1 );
+  Skip  := First * ( StrToIntDef( StartIndex, 1 ) - 1 );
+
+  SQL := Format(cSQLText, [ First, Skip ]);
   OrderBy := Request.QueryFields.Values['sidx'];
   SortAs  := Request.QueryFields.Values['sord'];
   if OrderBy.IsEmpty then
@@ -116,7 +121,6 @@ begin
 //    else
 //      raise Exception.Create('Invalid order clause syntax');
   end;
-
   // execute query and prepare response
   qryContacts.Open(SQL);
   try
@@ -168,7 +172,6 @@ begin
   qryContacts.Open('SELECT * FROM CONTACTS WHERE CODE = ?', [LastID]);
   try
     PrepareResponse(qryContacts.AsJSONObject, Response, Request);
-    //qryContacts.AsJSONArrayString;
   finally
     qryContacts.Close;
   end;
@@ -179,8 +182,7 @@ begin
   dbConnection.Params.Values['Database'] :=
     TPath.GetDirectoryName(WebApplicationFileName) +
     '\DATA\IVIEWER_UTF.FDB';
-  dbConnection.Params.Values['CharacterSet'] :=
-    'UTF8';
+  dbConnection.Params.Values['CharacterSet'] := 'UTF8';
 end;
 
 function TwmMain.GetRecordCount: Integer;
@@ -203,10 +205,9 @@ begin
     begin
       if AJSONValue is TJSONArray then
       begin
-
-        JObj.AddPair('page', ARequest.QueryFields.Values['page']);          // текущая страница
-        JObj.AddPair('total', IntToStr(TotalPages));                       // всего страниц
-        JObj.AddPair('records', IntToStr(TotalRecords));                   // всего  записей
+        JObj.AddPair('page', ARequest.QueryFields.Values['page']);              // текущая страница
+        JObj.AddPair('total', IntToStr(TotalPages));                            // всего страниц
+        JObj.AddPair('records', IntToStr(TotalRecords));                        // всего  записей
         JObj.AddPair('rows', AJSONValue);
       end
       else

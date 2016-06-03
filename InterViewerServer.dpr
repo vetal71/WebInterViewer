@@ -6,7 +6,7 @@ uses
   Winapi.Windows,
   Web.WebReq,
   Web.WebBroker,
-  WebModuleU in 'WebModuleU.pas', {wmMain: TWebModule}
+  WebModuleU in 'WebModuleU.pas',
   IdHTTPWebBrokerBridge;
 
 {$R *.res}
